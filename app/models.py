@@ -57,10 +57,17 @@ class ScanTriggerContext(BaseModel):
     triggered_at: datetime = Field(default_factory=utc_now)
 
 
+class CameraCaptureImage(BaseModel):
+    index: int = Field(ge=0)
+    image_id: str
+    image_url_or_path: str
+
+
 class CameraCaptureResponse(BaseModel):
     image_id: str
     image_url_or_path: str
     timestamp: datetime
+    images: list[CameraCaptureImage] | None = None
 
 
 class FruitDetection(BaseModel):
@@ -170,8 +177,6 @@ class FruitEvidence(BaseModel):
 
 
 class FrameEvidence(BaseModel):
-    camera_id: str
-    camera_role: str
     frame_id: int
     image_id: str
     captured_at: datetime = Field(default_factory=utc_now)

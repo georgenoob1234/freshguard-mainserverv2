@@ -79,8 +79,8 @@ class BaseHttpClient:
 
 
 class CameraServiceClient(BaseHttpClient):
-    async def capture(self) -> CameraCaptureResponse:
-        response = await self._request_with_retries("POST", "/capture", json={})
+    async def capture(self, *, use_extra: bool) -> CameraCaptureResponse:
+        response = await self._request_with_retries("POST", "/capture", json={"use_extra": use_extra})
         return self._validate(CameraCaptureResponse, response.json())
 
     async def fetch_image_bytes(self, image_url_or_path: str) -> bytes:

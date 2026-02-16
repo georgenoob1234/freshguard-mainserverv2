@@ -4,13 +4,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-
-class CameraConfig(BaseModel):
-    camera_id: str
-    role: Literal["main", "aux"] = "main"
 
 
 class Settings(BaseSettings):
@@ -38,7 +33,7 @@ class Settings(BaseSettings):
 
     # Backward-compatible alias still used by non-state-machine components.
     MIN_FRUIT_WEIGHT: float = 30.0
-    SIGNIFICANT_DELTA: float = 20.0
+    SIGNIFICANT_DELTA: float = 0.0
 
     CAMERA_SERVICE_URL: str = "http://localhost:8200"
     FRUIT_DETECTOR_URL: str = "http://localhost:8300"
@@ -71,15 +66,8 @@ class Settings(BaseSettings):
     FRUIT_LOW_CONFIDENCE_FALLBACK_THRESHOLD: float = 0.30
     FRUIT_TINY_BBOX_AREA_RATIO: float = 0.005
 
-    MAIN_CAMERA_FRAMES: int = 3
-    MAIN_CAMERA_FRAME_INTERVAL_MS: int = 150
-    AUX_CAMERA_FRAMES: int = 1
-    AUX_CAMERA_FRAME_INTERVAL_MS: int = 150
+    CAMERA_USE_EXTRA_DEFAULT: bool = True
     AGGREGATION_POLICY: Literal["vote", "average", "best_frame_plus_vote"] = "vote"
-
-    CAMERAS: list[CameraConfig] = Field(
-        default_factory=lambda: [CameraConfig(camera_id="camera-main", role="main")]
-    )
 
     DEFECT_MAX_PARALLEL: int = 6
 
@@ -88,11 +76,6 @@ class Settings(BaseSettings):
     DUPLICATE_WEIGHT_BUCKET_GRAMS: float = 5.0
 
     JOURNAL_PATH: Path = Path("data/journal/events.jsonl")
-
-    def frames_for_role(self, role: Literal["main", "aux"]) -> tuple[int, int]:
-        if role == "main":
-            return self.MAIN_CAMERA_FRAMES, self.MAIN_CAMERA_FRAME_INTERVAL_MS
-        return self.AUX_CAMERA_FRAMES, self.AUX_CAMERA_FRAME_INTERVAL_MS
 
 
 @lru_cache(maxsize=1)

@@ -6,7 +6,7 @@ from io import BytesIO
 import pytest
 from PIL import Image
 
-from app.config import CameraConfig, Settings
+from app.config import Settings
 from app.core.orchestrator import ScanOrchestrator, filter_detections_by_confidence
 from app.journal import EventJournal
 from app.models import (
@@ -22,7 +22,7 @@ class _StubCameraClient:
     def __init__(self, image_bytes: bytes) -> None:
         self._image_bytes = image_bytes
 
-    async def capture(self) -> CameraCaptureResponse:
+    async def capture(self, *, use_extra: bool) -> CameraCaptureResponse:  # noqa: ARG002
         return CameraCaptureResponse(
             image_id="img-1",
             image_url_or_path="/api/images/img-1.jpg",
@@ -124,9 +124,6 @@ async def test_low_confidence_fruit_does_not_reach_defect_detector_and_is_logged
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     settings = Settings(
-        CAMERAS=[CameraConfig(camera_id="cam-main", role="main")],
-        MAIN_CAMERA_FRAMES=1,
-        AUX_CAMERA_FRAMES=1,
         CLASS_CONFIDENCE_THRESHOLDS={"banana": 0.50},
         ALLOWED_FRUIT_CLASSES=["banana"],
         JOURNAL_PATH=tmp_path / "journal.jsonl",
@@ -152,10 +149,11 @@ async def test_low_confidence_fruit_does_not_reach_defect_detector_and_is_logged
         trigger_reason="test",
     )
     caplog.set_level("INFO")
-    frame = await orchestrator._process_single_frame(
+    frame = await orchestrator._process_single_image(
         context=context,
-        camera=settings.CAMERAS[0],
         frame_id=0,
+        image_id="img-1",
+        image_bytes=_dummy_image_bytes(),
     )
 
     assert defect_client.calls == 1
@@ -167,9 +165,6 @@ async def test_low_confidence_fruit_does_not_reach_defect_detector_and_is_logged
 @pytest.mark.asyncio
 async def test_defect_polygon_translated_to_full_image_coordinates(tmp_path) -> None:
     settings = Settings(
-        CAMERAS=[CameraConfig(camera_id="cam-main", role="main")],
-        MAIN_CAMERA_FRAMES=1,
-        AUX_CAMERA_FRAMES=1,
         CLASS_CONFIDENCE_THRESHOLDS={"banana": 0.50},
         ALLOWED_FRUIT_CLASSES=["banana"],
         JOURNAL_PATH=tmp_path / "journal.jsonl",
@@ -191,10 +186,11 @@ async def test_defect_polygon_translated_to_full_image_coordinates(tmp_path) -> 
         trigger_reason="test",
     )
 
-    frame = await orchestrator._process_single_frame(
+    frame = await orchestrator._process_single_image(
         context=context,
-        camera=settings.CAMERAS[0],
         frame_id=0,
+        image_id="img-1",
+        image_bytes=_dummy_image_bytes(),
     )
 
     assert len(frame.fruits) == 1

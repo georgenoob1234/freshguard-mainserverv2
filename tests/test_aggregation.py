@@ -25,17 +25,13 @@ def test_aggregation_vote_policy_uses_majority_for_defect_presence() -> None:
     defect = DefectInfo(type="defect", confidence=0.8)
 
     frames = [
-        FrameEvidence(camera_id="cam-1", camera_role="main", frame_id=0, image_id="img-0", fruits=[_fruit(fruit_id="f0")]),
+        FrameEvidence(frame_id=0, image_id="img-0", fruits=[_fruit(fruit_id="f0")]),
         FrameEvidence(
-            camera_id="cam-1",
-            camera_role="main",
             frame_id=1,
             image_id="img-1",
             fruits=[_fruit(fruit_id="f1", confidence=0.8, defects=[defect])],
         ),
         FrameEvidence(
-            camera_id="cam-1",
-            camera_role="main",
             frame_id=2,
             image_id="img-2",
             fruits=[_fruit(fruit_id="f2", confidence=0.7, defects=[defect])],
@@ -53,15 +49,11 @@ def test_aggregation_handles_missing_frame_data() -> None:
     aggregator = ScanAggregator()
     frames = [
         FrameEvidence(
-            camera_id="cam-1",
-            camera_role="main",
             frame_id=0,
             image_id="img-0",
             fruits=[_fruit(fruit_id="f0", confidence=0.85)],
         ),
         FrameEvidence(
-            camera_id="cam-1",
-            camera_role="main",
             frame_id=1,
             image_id="img-1",
             fruits=[],
@@ -78,8 +70,8 @@ def test_aggregation_handles_missing_frame_data() -> None:
 def test_representative_image_selection_is_deterministic() -> None:
     aggregator = ScanAggregator()
     frames = [
-        FrameEvidence(camera_id="cam-1", camera_role="main", frame_id=1, image_id="img-b", fruits=[_fruit(fruit_id="fb", confidence=0.9)]),
-        FrameEvidence(camera_id="cam-1", camera_role="main", frame_id=0, image_id="img-a", fruits=[_fruit(fruit_id="fa", confidence=0.9)]),
+        FrameEvidence(frame_id=1, image_id="img-b", fruits=[_fruit(fruit_id="fb", confidence=0.9)]),
+        FrameEvidence(frame_id=0, image_id="img-a", fruits=[_fruit(fruit_id="fa", confidence=0.9)]),
     ]
 
     result = aggregator.aggregate(frames, policy="vote")
