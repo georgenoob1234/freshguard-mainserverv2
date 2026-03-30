@@ -182,6 +182,7 @@ class ScanOrchestrator:
                 scan_id=context.scan_id,
                 weight_grams=context.weight_grams,
                 reason=context.trigger_reason,
+                operating_mode=context.operating_mode,
             )
             self._logger.info(
                 "Scan triggered",
@@ -190,6 +191,7 @@ class ScanOrchestrator:
                     "scan_id": context.scan_id,
                     "weight_grams": context.weight_grams,
                     "reason": context.trigger_reason,
+                    "operating_mode": context.operating_mode,
                 },
             )
 

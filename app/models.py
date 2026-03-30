@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from enum import Enum
 from statistics import mean
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
 
@@ -54,6 +54,7 @@ class ScanTriggerContext(BaseModel):
     scan_id: str
     weight_grams: float
     trigger_reason: str
+    operating_mode: Literal["scale", "shelf"] = "scale"
     triggered_at: datetime = Field(default_factory=utc_now)
 
 

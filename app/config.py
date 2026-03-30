@@ -17,12 +17,17 @@ class Settings(BaseSettings):
 
     APP_ENV: str = "dev"
     LOG_LEVEL: str = "INFO"
+    OPERATING_MODE: Literal["scale", "shelf"] = "shelf"
 
     SERVICE_HOST: str = "0.0.0.0"
     SERVICE_PORT: int = 8000
 
     WEIGHT_PUSH_PATH: str = "/weight"
     ENABLE_WEIGHT_POLLING: bool = False
+    SHELF_SCAN_INTERVAL_SECONDS: float = Field(default=5.0, gt=0)
+    SHELF_SOURCE_ID: str | None = None
+    # Compatibility payload value when shelf mode has no real scale weight.
+    SHELF_PUBLISH_WEIGHT_GRAMS: float = Field(default=0.0, ge=0)
 
     # Locked weight semantics:
     # - IDLE -> ACTIVE when grams >= ENTER_ACTIVE_WEIGHT
@@ -67,7 +72,7 @@ class Settings(BaseSettings):
     FRUIT_TINY_BBOX_AREA_RATIO: float = 0.005
 
     CAMERA_USE_EXTRA_DEFAULT: bool = True
-    AGGREGATION_POLICY: Literal["vote", "average", "best_frame_plus_vote"] = "vote"
+    AGGREGATION_POLICY: Literal["vote", "average", "best_frame_plus_vote"] = "average"
 
     DEFECT_MAX_PARALLEL: int = 6
 

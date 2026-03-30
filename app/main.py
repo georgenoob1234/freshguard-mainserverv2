@@ -18,6 +18,7 @@ def create_app() -> FastAPI:
     @app.on_event("startup")
     async def _startup() -> None:
         app.state.container = create_container(settings)
+        await app.state.container.start()
 
     @app.on_event("shutdown")
     async def _shutdown() -> None:
