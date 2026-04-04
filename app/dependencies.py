@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from app.config import Settings
+from app.config import Settings, max_fruit_imgsz_as_capture_resolution
 from app.core.orchestrator import ScanOrchestrator
 from app.core.state_machine import WeightStateMachine
 from app.journal import EventJournal
@@ -292,6 +292,12 @@ def create_container(settings: Settings) -> BrainContainer:
         base_url=settings.CAMERA_SERVICE_URL,
         timeout_seconds=settings.HTTP_TIMEOUT_SECONDS,
         retries=settings.HTTP_RETRIES,
+        capture_resolution=max_fruit_imgsz_as_capture_resolution(
+            settings.FRUIT_PRIMARY_IMGSZ,
+            settings.FRUIT_FALLBACK_IMGSZ,
+        ),
+        capture_format=settings.CAMERA_CAPTURE_FORMAT,
+        capture_quality=settings.CAMERA_CAPTURE_QUALITY,
     )
     fruit_client = FruitDetectorClient(
         service_name="fruit-detector",

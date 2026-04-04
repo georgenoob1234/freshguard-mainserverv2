@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, TypeVar
+from typing import Any, Literal, TypeVar
 from urllib.parse import urlparse
 
 import httpx
@@ -79,8 +79,35 @@ class BaseHttpClient:
 
 
 class CameraServiceClient(BaseHttpClient):
+    def __init__(
+        self,
+        *,
+        service_name: str,
+        base_url: str,
+        timeout_seconds: float,
+        retries: int,
+        capture_resolution: str,
+        capture_format: Literal["jpeg", "png"],
+        capture_quality: int,
+    ) -> None:
+        super().__init__(
+            service_name=service_name,
+            base_url=base_url,
+            timeout_seconds=timeout_seconds,
+            retries=retries,
+        )
+        self._capture_resolution = capture_resolution.strip().lower()
+        self._capture_format = capture_format
+        self._capture_quality = capture_quality
+
     async def capture(self, *, use_extra: bool) -> CameraCaptureResponse:
-        response = await self._request_with_retries("POST", "/capture", json={"use_extra": use_extra})
+        payload = {
+            "use_extra": use_extra,
+            "resolution": self._capture_resolution,
+            "format": self._capture_format,
+            "quality": self._capture_quality,
+        }
+        response = await self._request_with_retries("POST", "/capture", json=payload)
         return self._validate(CameraCaptureResponse, response.json())
 
     async def fetch_image_bytes(self, image_url_or_path: str) -> bytes:

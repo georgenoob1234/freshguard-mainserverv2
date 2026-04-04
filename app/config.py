@@ -8,6 +8,30 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+def max_fruit_imgsz_as_capture_resolution(primary: int | str, fallback: int | str) -> str:
+    """Larger WxH for camera /capture; supports int (square N) or 'WxH' / 'W' strings from env."""
+
+    def to_wh(value: int | str) -> tuple[int, int]:
+        if isinstance(value, int):
+            if value < 1:
+                raise ValueError(f"imgsz must be >= 1, got {value}")
+            return value, value
+        s = str(value).strip().lower()
+        parts = s.split("x", 1)
+        if len(parts) == 2:
+            return int(parts[0].strip()), int(parts[1].strip())
+        n = int(s)
+        if n < 1:
+            raise ValueError(f"imgsz must be >= 1, got {value!r}")
+        return n, n
+
+    pw, ph = to_wh(primary)
+    fw, fh = to_wh(fallback)
+    if pw * ph >= fw * fh:
+        return f"{pw}x{ph}"
+    return f"{fw}x{fh}"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -17,7 +41,7 @@ class Settings(BaseSettings):
 
     APP_ENV: str = "dev"
     LOG_LEVEL: str = "INFO"
-    OPERATING_MODE: Literal["scale", "shelf"] = "shelf"
+    OPERATING_MODE: Literal["scale", "shelf"] = "scale"
 
     SERVICE_HOST: str = "0.0.0.0"
     SERVICE_PORT: int = 8000
@@ -66,12 +90,14 @@ class Settings(BaseSettings):
     )
     DEFAULT_CLASS_CONFIDENCE_THRESHOLD: float = 0.50
 
-    FRUIT_PRIMARY_IMGSZ: int = 320
-    FRUIT_FALLBACK_IMGSZ: int = 416
+    FRUIT_PRIMARY_IMGSZ: int = 416
+    FRUIT_FALLBACK_IMGSZ: int = 640
     FRUIT_LOW_CONFIDENCE_FALLBACK_THRESHOLD: float = 0.30
     FRUIT_TINY_BBOX_AREA_RATIO: float = 0.005
 
     CAMERA_USE_EXTRA_DEFAULT: bool = True
+    CAMERA_CAPTURE_FORMAT: Literal["jpeg", "png"] = "jpeg"
+    CAMERA_CAPTURE_QUALITY: int = Field(default=95, ge=1, le=100)
     AGGREGATION_POLICY: Literal["vote", "average", "best_frame_plus_vote"] = "average"
 
     DEFECT_MAX_PARALLEL: int = 6
