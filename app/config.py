@@ -78,7 +78,7 @@ class Settings(BaseSettings):
     HTTP_RETRIES: int = 1
 
     ALLOWED_FRUIT_CLASSES: list[str] = Field(
-        default_factory=lambda: ["apple", "banana", "tomato"]
+        default_factory=lambda: ["apple", "banana", "tomato", "lemon", "cucumber"]
     )
     CLASS_CONFIDENCE_THRESHOLDS: dict[str, float] = Field(
         default_factory=lambda: {
@@ -86,12 +86,14 @@ class Settings(BaseSettings):
             "apple": 0.40,
             "banana": 0.50,
             "tomato": 0.45,
+            "lemon": 0.35,
+            "cucumber": 0.40
         }
     )
     DEFAULT_CLASS_CONFIDENCE_THRESHOLD: float = 0.50
 
-    FRUIT_PRIMARY_IMGSZ: int = 416
-    FRUIT_FALLBACK_IMGSZ: int = 640
+    FRUIT_PRIMARY_IMGSZ: int = 320
+    FRUIT_FALLBACK_IMGSZ: int = 416
     FRUIT_LOW_CONFIDENCE_FALLBACK_THRESHOLD: float = 0.30
     FRUIT_TINY_BBOX_AREA_RATIO: float = 0.005
 
