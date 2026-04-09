@@ -65,7 +65,12 @@ class _StubDefectClient:
 
 
 class _StubDefectClientWithPolygon:
+    def __init__(self) -> None:
+        self.crop_size: tuple[int, int] | None = None
+
     async def detect(self, *, image_bytes: bytes, image_id: str, fruit_id: str) -> DefectDetectionResponse:  # noqa: ARG002
+        image = Image.open(BytesIO(image_bytes))
+        self.crop_size = image.size
         return DefectDetectionResponse(
             image_id=image_id,
             fruit_id=fruit_id,
@@ -163,19 +168,33 @@ async def test_low_confidence_fruit_does_not_reach_defect_detector_and_is_logged
 
 
 @pytest.mark.asyncio
-async def test_defect_polygon_translated_to_full_image_coordinates(tmp_path) -> None:
+@pytest.mark.parametrize(
+    ("padding_ratio", "expected_polygon", "expected_crop_size"),
+    [
+        (0.15, [(90.0, 92.0), (100.0, 92.0), (100.0, 102.0)], (130, 130)),
+        (0.0, [(105.0, 107.0), (115.0, 107.0), (115.0, 117.0)], (100, 100)),
+    ],
+)
+async def test_defect_polygon_translated_to_full_image_coordinates(
+    tmp_path,
+    padding_ratio: float,
+    expected_polygon: list[tuple[float, float]],
+    expected_crop_size: tuple[int, int],
+) -> None:
     settings = Settings(
         CLASS_CONFIDENCE_THRESHOLDS={"banana": 0.50},
         ALLOWED_FRUIT_CLASSES=["banana"],
+        DEFECT_CROP_PADDING_RATIO=padding_ratio,
         JOURNAL_PATH=tmp_path / "journal.jsonl",
     )
+    defect_client = _StubDefectClientWithPolygon()
 
     orchestrator = ScanOrchestrator(
         settings=settings,
         journal=EventJournal(settings.JOURNAL_PATH),
         camera_client=_StubCameraClient(_dummy_image_bytes()),
         fruit_client=_StubFruitClient(),
-        defect_client=_StubDefectClientWithPolygon(),
+        defect_client=defect_client,
         ui_publisher=_StubPublisher(),
         main_publisher=_StubPublisher(),
     )
@@ -194,6 +213,8 @@ async def test_defect_polygon_translated_to_full_image_coordinates(tmp_path) -> 
     )
 
     assert len(frame.fruits) == 1
+    assert frame.fruits[0].bbox.to_xyxy() == (100.0, 100.0, 200.0, 200.0)
+    assert defect_client.crop_size == expected_crop_size
     defect = frame.fruits[0].defects[0]
     assert defect.segmentation is not None
-    assert defect.segmentation.polygon == [(105.0, 107.0), (115.0, 107.0), (115.0, 117.0)]
+    assert defect.segmentation.polygon == expected_polygon

@@ -103,6 +103,7 @@ class Settings(BaseSettings):
     AGGREGATION_POLICY: Literal["vote", "average", "best_frame_plus_vote"] = "average"
 
     DEFECT_MAX_PARALLEL: int = 6
+    DEFECT_CROP_PADDING_RATIO: float = Field(default=0.15, ge=0.0, le=0.5)
 
     ENABLE_DUPLICATE_SUPPRESSION: bool = True
     DUPLICATE_SUPPRESSION_WINDOW_MS: int = 3000

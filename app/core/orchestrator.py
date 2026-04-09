@@ -9,7 +9,7 @@ from time import perf_counter
 from app.config import Settings
 from app.core.aggregation import ScanAggregator
 from app.core.duplicate_guard import DuplicateResultGuard
-from app.core.image_ops import ImageDecodeError, crop_to_jpeg_bytes
+from app.core.image_ops import ImageDecodeError, defect_crop_to_jpeg_bytes
 from app.journal import EventJournal
 from app.logging import get_logger
 from app.models import (
@@ -81,11 +81,16 @@ def filter_detections_by_confidence(
     return valid, dropped
 
 
-def translate_defects_to_image_coordinates(*, defects: list[DefectInfo], fruit_bbox: BBox) -> list[DefectInfo]:
+def translate_defects_to_image_coordinates(
+    *,
+    defects: list[DefectInfo],
+    crop_x_min: float,
+    crop_y_min: float,
+) -> list[DefectInfo]:
     """Translate defect polygons from crop space into full-image coordinates."""
     translated: list[DefectInfo] = []
-    x_offset = fruit_bbox.x_min
-    y_offset = fruit_bbox.y_min
+    x_offset = crop_x_min
+    y_offset = crop_y_min
 
     for defect in defects:
         if defect.segmentation is None:
@@ -999,7 +1004,12 @@ class ScanOrchestrator:
     ) -> FruitEvidence:
         bbox = BBox.from_xyxy(detection.bbox)
         try:
-            crop_bytes = crop_to_jpeg_bytes(image_bytes, bbox)
+            crop_bytes, crop_rect = defect_crop_to_jpeg_bytes(
+                image_bytes,
+                bbox,
+                padding_x_ratio=self._settings.DEFECT_CROP_PADDING_RATIO,
+                padding_y_ratio=self._settings.DEFECT_CROP_PADDING_RATIO,
+            )
         except ImageDecodeError as exc:
             await self._journal.write_event(
                 "service_call_failed",
@@ -1019,6 +1029,19 @@ class ScanOrchestrator:
                 defects=[],
                 note=str(exc),
             )
+        self._logger.debug(
+            "Prepared padded defect crop",
+            extra={
+                "session_id": context.session_id,
+                "scan_id": context.scan_id,
+                "frame_id": frame_id,
+                "image_id": image_id,
+                "fruit_id": detection.fruit_id,
+                "original_bbox": bbox.to_xyxy(),
+                "padded_bbox": crop_rect,
+                "padding_ratio": self._settings.DEFECT_CROP_PADDING_RATIO,
+            },
+        )
 
         started = perf_counter()
         await self._journal.write_event(
@@ -1103,7 +1126,8 @@ class ScanOrchestrator:
         )
         defects_in_image_space = translate_defects_to_image_coordinates(
             defects=response.defects,
-            fruit_bbox=bbox,
+            crop_x_min=float(crop_rect[0]),
+            crop_y_min=float(crop_rect[1]),
         )
         return FruitEvidence(
             source_fruit_id=detection.fruit_id,
