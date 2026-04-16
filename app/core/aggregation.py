@@ -3,18 +3,24 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from statistics import mean, median
 
+from app.config import get_settings
 from app.models import AggregatedScan, BBox, DefectInfo, FrameEvidence, FruitEvidence, ScanFruit
 
 
 class ScanAggregator:
     """Aggregate multi-frame evidence into one deterministic ScanResult payload."""
 
+    def __init__(self):
+        self._settings = get_settings()
+
     def aggregate(
         self,
         frame_evidences: list[FrameEvidence],
         *,
-        policy: str = "vote",
+        policy: str | None = None,
     ) -> AggregatedScan:
+        if policy is None:
+            policy = self._settings.AGGREGATION_POLICY
         if not frame_evidences:
             return AggregatedScan(representative_image_id="unknown", fruits=[], metadata={"frames": 0})
 
